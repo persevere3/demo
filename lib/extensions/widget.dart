@@ -58,7 +58,7 @@ extension DecorationExtensions on Widget {
     borderRadius: BorderRadius.circular(radius),
     child: this,
   );
-  Widget withBorder({Color color = Colors.black12, double width = 1.0}) => Container(
+  Widget withBorder({Color color = Colors.black54, double width = 1.0}) => Container(
     decoration: BoxDecoration(border: Border.all(color: color, width: width)),
     child: this,
   );
@@ -149,5 +149,30 @@ extension TextStyleExtensions on TextStyle {
 //   TextStyle get body => textTheme.bodyText2!;
 //   TextStyle get caption => textTheme.caption!;
 // }
+
+// ------------------ Color Extensions ------------------
+extension HexColor on String {
+  Color toColor() {
+    String hex = this.replaceFirst('#', '');
+    if (hex.length == 6) {
+      hex = 'FF' + hex; // 加上不透明的 alpha 頭
+    }
+    return Color(int.parse(hex, radix: 16));
+  }
+}
+
+extension ColorUtils on Color {
+  Color lighten([double amount = 0.1]) {
+    final hsl = HSLColor.fromColor(this);
+    final lightened = hsl.withLightness((hsl.lightness + amount).clamp(0.0, 1.0));
+    return lightened.toColor();
+  }
+
+  Color darken([double amount = 0.1]) {
+    final hsl = HSLColor.fromColor(this);
+    final darkened = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
+    return darkened.toColor();
+  }
+}
 
 // ------------------ End ------------------
