@@ -125,44 +125,26 @@ class _AccountManagementPageState extends ConsumerState<AccountManagementPage> {
                         validator:
                             (value) => value == null || value.isEmpty ? '請輸入新登入密碼' : null,
                       ),
-                      if(true) ...[
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            // Text(
-                            //   '密碼強度 : ',
-                            //   style: TextStyle( color: '#777777'.toColor()),
-                            // ).mr(10),
-                            FlutterPwValidator(
-                              controller: _loginNewPasswordController,
-                              minLength: 6,
-                              uppercaseCharCount: 1,
-                              lowercaseCharCount: 1,
-                              numericCharCount: 1,
-                              strings: FrenchStrings(),
-                              width: _width * 0.8,
-                              height: 120,
-                              onSuccess: () {
-                                setState(() {
-                                  // _isPasswordValid = true;
-                                });
-                              },
-                              onFail: () {
-                                setState(() {
-                                  // _isPasswordValid = false;
-                                });
-                              },
-                            ),
-                          ],
-                        ).ml(10).mt(5),
-                        // Text(
-                        //   '【密码长度最少6个字符,且含有大小写英文字母+数字组合】',
-                        //   style: TextStyle( color: '#777777'.toColor()),
-                        // ).mt(5)
-                      ],
-                      SizedBox(
-                        height: 30,
-                      ),
+                      FlutterPwValidator(
+                        controller: _loginNewPasswordController,
+                        minLength: 6,
+                        uppercaseCharCount: 1,
+                        lowercaseCharCount: 1,
+                        numericCharCount: 1,
+                        strings: FrenchStrings(),
+                        width: _width * 0.8,
+                        height: 150,
+                        onSuccess: () {
+                          setState(() {
+                            // _isPasswordValid = true;
+                          });
+                        },
+                        onFail: () {
+                          setState(() {
+                            // _isPasswordValid = false;
+                          });
+                        },
+                      ).mt(10).mb(30),
                       TextFormField(
                         controller: _loginConfirmPasswordController,
                         decoration: InputDecoration(
@@ -210,7 +192,27 @@ class _AccountManagementPageState extends ConsumerState<AccountManagementPage> {
                         ),
                         validator:
                             (value) => value == null || value.isEmpty ? '請輸入新取款密碼' : null,
-                      ).mb(15),
+                      ),
+                      FlutterPwValidator(
+                        controller: _withdrawNewPasswordController,
+                        minLength: 6,
+                        uppercaseCharCount: 1,
+                        lowercaseCharCount: 1,
+                        numericCharCount: 1,
+                        strings: FrenchStrings(),
+                        width: _width * 0.8,
+                        height: 150,
+                        onSuccess: () {
+                          setState(() {
+                            // _isPasswordValid = true;
+                          });
+                        },
+                        onFail: () {
+                          setState(() {
+                            // _isPasswordValid = false;
+                          });
+                        },
+                      ).mt(10).mb(30),
                       TextFormField(
                         controller: _withdrawConfirmPasswordController,
                         decoration: InputDecoration(

@@ -7,7 +7,7 @@ import 'package:demo/providers/configProvider.dart';
 // ✅ 使用服務 provider
 import '../modules/dialog_module/services/dialog_service.dart';
 import '../modules/notification_module/services/notification_service.dart';
-import '../modules/error_module/models/error_model.dart';
+// import '../modules/error_module/models/error_model.dart';
 import '../modules/error_module/services/error_service.dart';
 
 class BottomNav extends ConsumerStatefulWidget {

@@ -122,6 +122,64 @@ class _MyAppState extends ConsumerState<MyApp> {
             foregroundColor: primaryColor.darken(0.2),
           ),
         ),
+
+        dialogTheme: DialogThemeData(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(5)),
+          ),
+        ),
+
+        textButtonTheme:  TextButtonThemeData(
+          style: TextButton.styleFrom(
+            backgroundColor: primaryColor.lighten(0.4),
+            foregroundColor: primaryColor.darken(0.2),
+          ),
+        ),
+
+        filledButtonTheme:  FilledButtonThemeData(
+          style: TextButton.styleFrom(
+            backgroundColor: primaryColor.lighten(0.4),
+            foregroundColor: primaryColor.darken(0.2),
+          ),
+        ),
+
+        // DatePicker ==================================================
+        datePickerTheme: DatePickerThemeData(
+          // 一般「被選取」的日期（非今天）
+          dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) return primaryColor;
+            return Colors.transparent;
+          }),
+          dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) return Colors.white;
+            return null;
+          }),
+
+          // 「今天」這一格（currentDate）
+          todayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+            // 如果今天也被選取，讓它跟 selected 一樣吃 primary
+            if (states.contains(WidgetState.selected)) return primaryColor;
+            // 今天未選取：透明（只留邊框/字色）
+            return Colors.transparent;
+          }), // todayBackgroundColor 在 DatePickerThemeData 內有定義
+          todayForegroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) return Colors.white;
+            return primaryColor; // 今天未選取：字色用主色
+          }), // todayForegroundColor 在 DatePickerThemeData 內有定義
+          todayBorder: const BorderSide(width: 1.5), // BorderSide.color 會被忽略
+        ),
+
+        timePickerTheme: TimePickerThemeData(
+          dialHandColor: primaryColor,          // 指針/中心圓點顏色
+          dialBackgroundColor: Colors.white,    // 錶面背景
+
+          // 這些會影響時間盤面與 AM/PM 切換塊的主色系
+          hourMinuteTextColor: Colors.white,
+          hourMinuteColor: primaryColor,
+          dayPeriodTextColor: Colors.white,
+          dayPeriodColor: primaryColor, // AM/PM 塊背景
+        ),
       ),
     );
   }

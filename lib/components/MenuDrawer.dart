@@ -10,6 +10,7 @@ class MenuDrawer extends ConsumerWidget {
     {'title': '優惠活動', 'icon': Icons.card_giftcard, 'routerName': '/promotion'},
     {'title': '線上客服', 'icon': Icons.contact_support, 'routerName': '/customerService'},
     {'title': '帳戶管理', 'icon': Icons.manage_accounts, 'routerName': '/accountManagement'},
+    {'title': '帳戶紀錄', 'icon': Icons.list_alt_rounded, 'routerName': '/recordList'},
 
     {'title': '搜尋', 'icon': Icons.home},
     {'title': '網站APP下載', 'icon': Icons.settings},

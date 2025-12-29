@@ -6,6 +6,9 @@ import '../pages/user/UserPage.dart';
 import '../pages/promotion/PromotionPage.dart';
 import '../pages/customerService/CustomerServicePage.dart';
 import '../pages/accountManagement/AccountManagementPage.dart';
+import '../pages/recordList/RecordListPage.dart';
+import '../pages/recordList/recordRebateNow/RecordRebateNowPage.dart';
+import '../pages/recordList/recordDeposit/RecordDepositPage.dart';
 
 class AppRouter {
   static final routes = <String, WidgetBuilder>{
@@ -40,6 +43,21 @@ class AppRouter {
       case '/accountManagement':
         return MaterialPageRoute(
           builder: (context) => AccountManagementPage(),
+          settings: settings,
+        );
+      case '/recordList':
+        return MaterialPageRoute(
+          builder: (context) => RecordListPage(),
+          settings: settings,
+        );
+      case '/recordRebateNow':
+        return MaterialPageRoute(
+          builder: (context) => RecordRebateNowPage(),
+          settings: settings,
+        );
+      case '/recordDeposit':
+        return MaterialPageRoute(
+          builder: (context) => RecordDepositPage(),
           settings: settings,
         );
       default:

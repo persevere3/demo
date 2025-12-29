@@ -44,6 +44,8 @@ dependencies:
 
   flutter_pw_validator: 1.6.0
 
+  flutter_inner_shadow: 0.0.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -4,8 +4,6 @@ import 'package:demo/app.dart';
 import 'package:demo/config/app_config.dart';
 import 'package:demo/providers/configProvider.dart';
 
-import 'package:flutter/rendering.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final config = await AppConfig.load('app1');
