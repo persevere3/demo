@@ -41,6 +41,7 @@ class RecordQueryButton<T> extends StatelessWidget {
     this.trailingIconSize = 35,
     this.presets,
     this.extraBuilder,
+    this.extraButtonBuilder,
     this.initialRange,
 
     required this.primaryColor
@@ -71,10 +72,12 @@ class RecordQueryButton<T> extends StatelessWidget {
   final double trailingIconSize;
 
   // === 對話框功能配置 ===
-  final List<TimePreset>? presets;                          // 自訂快捷選項
+  final List<TimePreset>? presets;  // 自訂快捷選項
   final Widget Function(BuildContext, ValueNotifier<T?>)?
-  extraBuilder;                                         // 自訂參數區域
-  final DateTimeRange? initialRange;                         // 初始時間範圍
+  extraBuilder;  // 自訂參數區域
+  final Widget Function(BuildContext)? extraButtonBuilder;  // 自訂按鈕區域
+  final DateTimeRange? initialRange;  // 初始時間範圍
+
 
   //
   final Color primaryColor;
@@ -165,7 +168,7 @@ class RecordQueryButton<T> extends StatelessWidget {
                 // === 開始時間 ===
                 ListTile(
                   contentPadding: EdgeInsets.symmetric(horizontal: 10),
-                  title: const Text('開始時間'),
+                  title: const Text('起始時間'),
                   subtitle: Text(_format(start)),
                   trailing: const Icon(Icons.edit_calendar),
                   onTap: () async {
@@ -196,14 +199,13 @@ class RecordQueryButton<T> extends StatelessWidget {
 
                 // === 快捷選項 ===
                 Align(
-                  alignment: Alignment.centerLeft,
+                  alignment: Alignment.center,
                   child: Wrap(
                     spacing: 8,
                     runSpacing: 8,
                     children: [
                       for (final preset in presetsList)
-                        ActionChip(
-                          label: Text(preset.label),
+                        TextButton(
                           onPressed: () {
                             final range = preset.buildRange(DateTime.now());
                             setDialogState(() {
@@ -211,7 +213,19 @@ class RecordQueryButton<T> extends StatelessWidget {
                               end = range.end;
                             });
                           },
-                        ),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            foregroundColor: primaryColor, // 文字顏色
+                          ),
+                          child: Text(
+                            preset.label,
+                            style: TextStyle(
+                              decoration: TextDecoration.underline, // 加底線
+                              decorationColor: primaryColor, // 底線顏色
+                              fontSize: 18
+                            ),
+                          ),
+                        )
                     ],
                   ),
                 ).py(10),
@@ -241,6 +255,8 @@ class RecordQueryButton<T> extends StatelessWidget {
             },
             child: const Text('查詢'),
           ),
+
+          if (extraButtonBuilder != null) extraButtonBuilder!(dialogContext),
         ],
       ),
     );

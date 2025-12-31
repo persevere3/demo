@@ -67,6 +67,9 @@ class _MyAppState extends ConsumerState<MyApp> {
       initialRoute: '/',
       title: config.appName,
 
+      //
+      debugShowCheckedModeBanner: false,
+
       // ✅ 實際使用模組監聽器
       builder: (context, child) {
         if (!_modulesInitialized) {

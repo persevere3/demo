@@ -11,39 +11,6 @@ import '../../../layout/DefaultLayout.dart';
 import 'package:demo/providers/configProvider.dart';
 import 'package:demo/providers/userProvider.dart';
 
-// class Item extends StatelessWidget {
-//   final String name;
-//   final IconData icon;
-//   final String routerName;
-//
-//   const Item({
-//     required this.name,
-//     required this.icon,
-//     required this.routerName,
-//   });
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return InkWell(
-//       onTap: () {},
-//       child: Column(
-//         mainAxisSize: MainAxisSize.min,
-//         children: [
-//           Container(
-//             padding: const EdgeInsets.all(12),
-//             decoration: const BoxDecoration(
-//               shape: BoxShape.circle,
-//               color: Color(0xFFE8F0FE),
-//             ),
-//             child: Icon(icon, size: 28, color: Colors.blue).mb(6),
-//           ),
-//           Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
-//         ],
-//       ),
-//     ).flex(1);
-//   }
-// }
-
 // 定义查询参数类
 class TransactionQueryExtra {
   String? type;        // 交易类型
@@ -85,7 +52,7 @@ class _RecordDepositPageState extends ConsumerState<RecordDepositPage> {
 
     return DefaultLayout(
       // title 可選，不傳則使用 config.appName
-        title: '存取款紀錄',
+        title: '帳戶紀錄',
         child: Column(
           children: [
             RecordQueryButton<TransactionQueryExtra>(
@@ -168,7 +135,6 @@ class _RecordDepositPageState extends ConsumerState<RecordDepositPage> {
               headerTextStyle: TextStyle(color: Colors.white),
               rowBackground: primaryColor.lighten(0.4),
               gridColor: Colors.white,
-
 
               columns: const [
                 StickyTableColumn(title: '事項', flex: 1, align: TextAlign.left),

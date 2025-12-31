@@ -60,12 +60,12 @@ class _RecordListPageState extends ConsumerState<RecordListPage> {
     {
       "RecordName": "下注紀錄",
       "RecordIcon": Icons.money,
-      "RecordRouteName": "/recordRebateNow"
+      "RecordRouteName": "/recordBets"
     },
     {
       "RecordName": "返水紀錄",
       "RecordIcon": Icons.card_giftcard,
-      "RecordRouteName": "/recordRebateNow"
+      "RecordRouteName": "/recordRebate"
     },
     {
       "RecordName": "存取款紀錄",
@@ -75,17 +75,17 @@ class _RecordListPageState extends ConsumerState<RecordListPage> {
     {
       "RecordName": "轉帳紀錄",
       "RecordIcon": Icons.money,
-      "RecordRouteName": "/recordRebateNow"
+      "RecordRouteName": "/recordTransfer"
     },
     {
       "RecordName": "我的存款優惠",
       "RecordIcon": Icons.money,
-      "RecordRouteName": "/recordRebateNow"
+      "RecordRouteName": "/recordPromotion"
     },
     {
       "RecordName": "活動金流",
       "RecordIcon": Icons.card_giftcard,
-      "RecordRouteName": "/recordRebateNow"
+      "RecordRouteName": "/recordActiveScash"
     },
   ];
 
