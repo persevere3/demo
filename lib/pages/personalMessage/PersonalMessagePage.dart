@@ -76,7 +76,7 @@ class _PersonalMessagePageState extends ConsumerState<PersonalMessagePage> {
   ];
 
   // 顯示發信 Dialog
-  void _showSendMessageDialog() {
+  void _showSendMessageDialog(Color primaryColor) {
     final subjectController = TextEditingController();
     final contentController = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -86,8 +86,7 @@ class _PersonalMessagePageState extends ConsumerState<PersonalMessagePage> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.email, color: Colors.blue),
-            SizedBox(width: 8),
+            Icon(Icons.email, color: primaryColor, size: 30).mr(5),
             Text('發送訊息'),
           ],
         ),
@@ -142,20 +141,20 @@ class _PersonalMessagePageState extends ConsumerState<PersonalMessagePage> {
                 Container(
                   padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.shade200),
+                    color: primaryColor.lighten(0.4),
+                    borderRadius: BorderRadius.circular(5),
+                    border: Border.all(color: primaryColor.darken(0.2)),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                      Icon(Icons.info_outline, color: primaryColor.darken(0.2), size: 20),
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           '任何网站功能或建议反馈可以发信至线上客服回报问题',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.blue.shade900,
+                            color: primaryColor.darken(0.2),
                           ),
                         ),
                       ),
@@ -179,7 +178,7 @@ class _PersonalMessagePageState extends ConsumerState<PersonalMessagePage> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('訊息已送出，我們會盡快回覆您'),
-                    backgroundColor: Colors.green,
+                    backgroundColor: primaryColor.lighten(0.2),
                   ),
                 );
               }
@@ -192,7 +191,7 @@ class _PersonalMessagePageState extends ConsumerState<PersonalMessagePage> {
   }
 
   // 顯示訊息詳細內容 Dialog
-  void _showMessageDetail(Message message) {
+  void _showMessageDetailDialog(Message message) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -267,7 +266,7 @@ class _PersonalMessagePageState extends ConsumerState<PersonalMessagePage> {
             margin: EdgeInsets.only(top: 10, right: 10),
             alignment: Alignment.centerRight, // 置右
             child: TextButton.icon(
-              onPressed: _showSendMessageDialog,
+              onPressed: () => _showSendMessageDialog(primaryColor),
               icon: Icon(Icons.email, size: 24),
               label: Text(
                 '發信',
@@ -301,11 +300,11 @@ class _PersonalMessagePageState extends ConsumerState<PersonalMessagePage> {
               final message = messages[index];
               return Card(
                 elevation: message.isRead ? 1 : 3,
-                color: message.isRead ? Colors.white : Colors.blue.shade50,
+                color: message.isRead ? Colors.white : primaryColor.lighten(0.4),
                 child: ListTile(
                   leading: CircleAvatar(
                     backgroundColor:
-                    message.isRead ? Colors.grey : Colors.blue,
+                    message.isRead ? Colors.grey : primaryColor,
                     child: Icon(
                       message.isRead ? Icons.mail_outline : Icons.mail,
                       color: Colors.white,
@@ -367,7 +366,7 @@ class _PersonalMessagePageState extends ConsumerState<PersonalMessagePage> {
                     ],
                   ),
                   trailing: Icon(Icons.chevron_right),
-                  onTap: () => _showMessageDetail(message),
+                  onTap: () => _showMessageDetailDialog(message),
                 ),
               );
             },
@@ -377,4 +376,3 @@ class _PersonalMessagePageState extends ConsumerState<PersonalMessagePage> {
     );
   }
 }
-
