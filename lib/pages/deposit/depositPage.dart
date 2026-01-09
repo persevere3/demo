@@ -1,0 +1,776 @@
+import 'package:flutter/material.dart';
+// import 'package:flutter/services.dart';
+
+import 'package:demo/extensions/widget.dart';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:demo/providers/configProvider.dart';
+// import 'package:demo/providers/userProvider.dart';
+
+import '../../../layout/DefaultLayout.dart';
+
+//
+enum DepositType {
+  online,      // 線上存款
+  offline,     // 線下存款
+  vip,         // VIP 支付
+}
+
+// 線上錢包 配置
+class OnlineWallet {
+// final String id;                                   // 錢包唯一識別
+  final String name;                                  // 錢包名稱（顯示用）
+  final String icon;                                  // 錢包 icon（可選，或用 IconData）
+  final bool isRecommended;                           // 是否推薦
+  List<OnlineWalletMerchantOption> merchantOptions;   // 商號選擇列表
+  OnlineWalletMerchantOption? selectedMerchant;       // 選中的商號
+
+  OnlineWallet({
+    // required this.id,
+    required this.name,
+    this.icon = '',
+    this.isRecommended = false,
+    required this.merchantOptions,
+    this.selectedMerchant,
+  });
+}
+
+// 線上錢包 商號選項
+class OnlineWalletMerchantOption {
+  // final String id;                       // 商號 ID
+  final String name;                        // 商號名稱
+  final String? logo;                       // 商號 logo URL（可選）
+  final String? instructionUrl;             // 使用說明連結
+  final double minAmount;                   // 最小存款額度
+  final double maxAmount;                   // 最大存款額度
+  final String? bonusText;                      // 該商號的贈送優惠
+  final String? handlingFeeText;                // 手續費
+  final String? hint;                       // 提示文字
+  final List<double>? quickAmounts;         // 該商號的快捷額度（會跟著變動）
+  final bool? isAccountHolderNameRequired;  // 是否需要填帳號名稱
+
+  OnlineWalletMerchantOption({
+    // required this.id,
+    required this.name,
+    this.logo,
+    this.instructionUrl,
+    required this.minAmount,
+    required this.maxAmount,
+    this.bonusText,
+    this.handlingFeeText,
+    this.hint,
+    this.quickAmounts,
+    this.isAccountHolderNameRequired
+  });
+}
+
+// VIP
+class VIPMerchant {
+  final String name;                        // 商號名稱
+  final String paymentTypeWalletText;       // 收付款方式 錢包 顯示文字
+  final String? paymentTypeHint;            // 收付款方式 提示
+  final bool? showsManagePayments;          // 是否顯示 管理綁定支付方式
+  final double minAmount;                   // 最小存款額度
+  final double maxAmount;                   // 最大存款額度
+  final String? enterWalletText;            // 進入錢包 顯示文字 (顯示錢包餘額)
+  final bool? requiresPaymentPassword;    // 是否需要 支付密碼
+  final bool? requiresSmsVerification;    // 是否需要 短信驗證
+  final String? paymentHint;                // 收付款 提示
+
+  VIPMerchant({
+    required this.name,
+    required this.paymentTypeWalletText,
+    this.paymentTypeHint,
+    this.showsManagePayments,
+    required this.minAmount,
+    required this.maxAmount,
+    this.enterWalletText,
+    this.requiresPaymentPassword,
+    this.requiresSmsVerification,
+    this.paymentHint
+  });
+}
+
+class DepositPage extends ConsumerStatefulWidget {
+  const DepositPage({super.key});
+  @override
+  ConsumerState<DepositPage> createState() => _DepositPageState();
+}
+
+class _DepositPageState extends ConsumerState<DepositPage> {
+  // 線上存款 =============================================
+  final String _anouncement = '暫無公告!';
+
+  DepositType _depositType = DepositType.online;
+
+  final List<OnlineWallet> onlineWallets = [
+    OnlineWallet(
+      // id: '紅豆錢包',
+      name: '紅豆錢包',
+      icon: '💰',
+      isRecommended: true,
+      merchantOptions: [
+        OnlineWalletMerchantOption(
+          name: '紅豆錢包',
+          instructionUrl: 'https://open.hdpay.top/tutorial/',
+          minAmount: 10,
+          maxAmount: 1000000,
+          bonusText: '1.2%',
+          handlingFeeText: '1%',
+          quickAmounts: [10, 100, 1000, 10000, 100000, 1000000],
+          hint: '【注册送36元】红豆钱包充值，笔笔加赠最高3%，专享优惠活动，存取款秒到账！',
+          isAccountHolderNameRequired: true
+        ),
+        OnlineWalletMerchantOption(
+          name: '商號 B',
+          minAmount: 50,
+          maxAmount: 5000,
+          bonusText: '1.2345%',
+          quickAmounts: [50, 100, 500, 1000, 2000, 3000, 5000],
+        ),
+      ],
+    ),
+  ];
+  OnlineWallet? selectedOnlineWallet;
+
+  // 帳號 + 幣種
+  final String _account = 'Jacob';
+  final String _currency = 'CNY';
+
+  // 輸入金額
+  final TextEditingController _amountController = TextEditingController();
+  String? _amountErrorText;
+  final TextEditingController _accountHolderNameController = TextEditingController();
+  String? _accountHolderNameErrorText;
+
+  // 顯示 公告
+  void _showAnnoucement() {
+    final config = ref.watch(configProvider);
+    final primaryColor = config.primaryColor.toColor();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('公告', style: TextStyle(color: primaryColor)).center(),
+        content: Text(_anouncement),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context, false);
+            },
+            child: Text('關閉')
+          ),
+        ]
+      ),
+    );
+  }
+
+  // 修改 存款類型
+  void _changeDepositType(type) {
+    setState(() {
+      _depositType = type;
+      if(type == DepositType.online) {
+        selectedOnlineWallet = onlineWallets[0];
+        selectedOnlineWallet?.selectedMerchant = selectedOnlineWallet?.merchantOptions[0];
+      }
+      else if(type == DepositType.vip) {
+        selectedVIPMerchant = VIPMerchantList[0];
+      }
+    });
+  }
+  Widget _handleContent(Color primaryColor) {
+    return switch (_depositType) {
+      DepositType.online => _buildOnlineDepositContent(primaryColor),
+      DepositType.vip => _buildVipDepositContent(primaryColor),
+      DepositType.offline => _buildOfflineDepositContent(),
+    };
+  }
+
+  //
+  // 確定轉換
+  void _confirmDeposit() {
+    final amountText = _amountController.text;
+    final accountHolderNameText = _accountHolderNameController.text;
+
+
+    setState(() {
+      _amountErrorText = validateAmount(amountText);
+      if(selectedOnlineWallet?.selectedMerchant?.isAccountHolderNameRequired ?? false) {
+        _accountHolderNameErrorText = validateAccountHolderName(accountHolderNameText);
+      }
+    });
+
+    if (_amountErrorText != null) return;
+    if(selectedOnlineWallet?.selectedMerchant?.isAccountHolderNameRequired ?? false) {
+      if (_accountHolderNameErrorText != null) return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Text('確定存款: $amountText').mr(10),
+            if(selectedOnlineWallet?.selectedMerchant?.isAccountHolderNameRequired ?? false)
+              Text('帳戶姓名: $accountHolderNameText')
+          ],
+        ),
+      ),
+    );
+  }
+  String? validateAmount(String text) {
+    if (text.isEmpty) return '請輸入金額';
+
+    final value = double.tryParse(text);
+    if (value == null) return '請輸入有效數字';
+    if (value < 0) return '金額不能為負數';
+
+    // 檢查 區間
+    final wallet = selectedOnlineWallet;
+    if(wallet == null) return null;
+    final merchant = wallet.selectedMerchant;
+    if(merchant == null) return null;
+    if (value < merchant.minAmount ||
+        value > merchant.maxAmount
+    ) {
+      return '存款额度须在 ${selectedOnlineWallet?.selectedMerchant?.minAmount} - ${selectedOnlineWallet?.selectedMerchant?.maxAmount} 之間';
+    }
+
+    return null; // 通過驗證
+  }
+  String? validateAccountHolderName(String text) {
+    if (text.isEmpty) return '請輸入帳戶姓名';
+
+    return null; // 通過驗證
+  }
+
+  // VIP支付 =============================================
+  List<VIPMerchant> VIPMerchantList = [
+    VIPMerchant(
+      name: '紅豆快速錢包',
+      paymentTypeWalletText: '紅豆快速錢包',
+      paymentTypeHint: '点击"绑定"进行授权绑定。',
+      showsManagePayments: true,
+      minAmount: 10,
+      maxAmount: 100000,
+      enterWalletText: '進入紅豆快速錢包',
+      requiresPaymentPassword: false,
+      requiresSmsVerification: false,
+      paymentHint: '【注册送36元】 点击"绑定"进行授权绑定>下载红豆钱包完成相关验证>钱包转出或者转入操作>首次存款或取款需短信验证授权'
+    ),
+    VIPMerchant(
+        name: '錢能快速錢包',
+        paymentTypeWalletText: '錢能快速錢包1-5000000',
+        // paymentTypeHint: '',
+        showsManagePayments: false,
+        minAmount: 1,
+        maxAmount: 5000000,
+        enterWalletText: '進入錢能錢包',
+        requiresPaymentPassword: false,
+        requiresSmsVerification: false,
+        paymentHint: '快速充值绑定手机号，需与注册信息手机号一致。一经绑定无法更改。'
+    ),
+  ];
+  VIPMerchant? selectedVIPMerchant;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _depositType = DepositType.online;
+
+    // api 取得 onlineWallets
+
+    selectedOnlineWallet = onlineWallets[0];
+    selectedOnlineWallet?.selectedMerchant = selectedOnlineWallet?.merchantOptions[0];
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final config = ref.watch(configProvider);
+    final primaryColor = config.primaryColor.toColor();
+
+    return DefaultLayout(
+      // title 可選，不傳則使用 config.appName
+      title: '快速充值',
+      child: Column(
+        children: [
+          _buildAnnouncement(),
+
+          const Divider(height: 1),
+
+          _buildTabs(primaryColor).mt(10),
+
+          _handleContent(primaryColor).flex(),
+        ],
+      ),
+    );
+  }
+
+
+  // 建立 公告 =============================================
+  Widget _buildAnnouncement() {
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () {
+        _showAnnoucement();
+      },
+      child: Row(
+        children: [
+          Text('公告', style: TextStyle(fontSize: 16),).ml(10),
+        ]
+      ).py(10)
+    );
+  }
+
+  // 建立 標籤 =============================================
+  Widget _buildTabs(Color primaryColor) {
+    return Container(
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          // 左上角：深色陰影（凹陷的陰暗面）
+          BoxShadow(
+            color: Colors.grey.shade300,
+            offset: const Offset(1, 1),
+            blurRadius: 1,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _buildTab(
+            primaryColor: primaryColor,
+            label: '線上存款',
+            selected: _depositType == DepositType.online,
+            onTap: () {
+              _changeDepositType(DepositType.online);
+            },
+          ),
+          _buildTab(
+            primaryColor: primaryColor,
+            label: 'VIP支付',
+            selected: _depositType == DepositType.vip,
+            onTap: () {
+              _changeDepositType(DepositType.vip);
+            },
+          ),
+          _buildTab(
+            primaryColor: primaryColor,
+            label: '線下存款',
+            selected: _depositType == DepositType.offline,
+            onTap: () {
+              _changeDepositType(DepositType.offline);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+  Widget _buildTab({
+    required Color primaryColor,
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? primaryColor : Colors.transparent,
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? Colors.white : Colors.grey.shade700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 建立 線上存款 內容 =============================================
+  Widget _buildOnlineDepositContent(Color primaryColor) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 錢包 列表
+          GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,            // 不滾動時使用
+            physics: NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 3,       // 調整按鈕寬高比
+            children: List.generate(onlineWallets.length, (walletIndex) {
+              return ElevatedButton(
+                style:  ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(5), // 圓角
+                  ),
+                ),
+                onPressed: () {
+                  setState(() {
+                    selectedOnlineWallet = onlineWallets[walletIndex];
+
+                    final wallet = selectedOnlineWallet;
+                    if (wallet == null) return;
+                    wallet.selectedMerchant = wallet.merchantOptions[0];
+                  });
+                },
+                child: Text(onlineWallets[walletIndex].name),
+              );
+            }),
+          ),
+
+          // 使用說明
+          if(selectedOnlineWallet?.selectedMerchant?.instructionUrl != null)
+           Text('[${selectedOnlineWallet?.name}說明] 買賣幣使用流程 | [下載地址]', style: TextStyle(color: Colors.red)).mt(20),
+
+          // 帳號 + 幣種
+          Text('帳號: $_account').mt(20),
+          Text('幣種: $_currency'),
+
+          // 商號 下拉
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: DropdownButton<OnlineWalletMerchantOption>(
+              value: selectedOnlineWallet?.selectedMerchant,
+              isExpanded: true,
+              underline: const SizedBox.shrink(),
+              icon: const Icon(Icons.keyboard_arrow_down),
+              items: selectedOnlineWallet?.merchantOptions.map((option) {
+                return DropdownMenuItem<OnlineWalletMerchantOption>(
+                  value: option,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.account_balance_wallet_outlined, size: 20),
+                      const SizedBox(width: 8),
+                      Text(option.name),
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: (OnlineWalletMerchantOption? newValue) {
+                setState(() {
+                  selectedOnlineWallet?.selectedMerchant = newValue!;
+                });
+              },
+            ),
+          ).mt(20),
+
+          // 金額
+          TextField(
+            controller: _amountController,
+            keyboardType: TextInputType.number,
+
+            textAlignVertical: TextAlignVertical.center,  // 關鍵設定
+
+            decoration: InputDecoration(
+              labelText: '輸入金額',
+              errorText: _amountErrorText,
+              contentPadding: EdgeInsets.only(left: 10),  // 移除預設內距
+
+              prefix: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(Icons.attach_money, size: 20).mr(5),
+                ],
+              ).h(35),
+
+              // prefixIcon: Icon(Icons.attach_money, size: 20),  // 左：貨幣圖標,
+              suffixIcon: IconButton(  // 右：可點擊清空按鈕
+                icon: Icon(Icons.clear),
+                onPressed: () {
+                  _amountController.clear();
+                  setState(() {
+                    _amountErrorText = null;
+                  });
+                },
+              ),
+              border: const OutlineInputBorder(),
+            ),
+          ).px(1).mt(20),
+
+          // 存款额度說明 贈送優惠 手續費 提示 快捷按鈕 帳號名稱
+          if( selectedOnlineWallet?.selectedMerchant != null) ...[
+            // 存款额度說明
+            Text('(存款额度须在 ${selectedOnlineWallet?.selectedMerchant?.minAmount} - ${selectedOnlineWallet?.selectedMerchant?.maxAmount} 之間)').mt(2),
+
+            // 贈送優惠
+            if(selectedOnlineWallet?.selectedMerchant?.bonusText != null)
+              Text(
+                '贈送優惠: ${selectedOnlineWallet?.selectedMerchant?.bonusText}',
+                style: TextStyle(color: Colors.white)
+              ).px(6).py(3).bg('#ed6f00'.toColor()).rounded(3).mt(5),
+
+            // 手續費
+            if(selectedOnlineWallet?.selectedMerchant?.handlingFeeText != null)
+              Text(
+                  '手續費: ${selectedOnlineWallet?.selectedMerchant?.handlingFeeText}',
+                  style: TextStyle(color: Colors.white)
+              ).px(6).py(3).bg('#ff1414'.toColor()).rounded(3).mt(5),
+
+            // 提示
+            if(selectedOnlineWallet?.selectedMerchant?.hint != null)
+              Text('${selectedOnlineWallet?.selectedMerchant?.hint}', style: TextStyle(color: Colors.red)).mt(5),
+
+            // 快捷按鈕 列表
+            if(selectedOnlineWallet?.selectedMerchant?.quickAmounts != null)
+              GridView.count(
+                crossAxisCount: 4,
+                shrinkWrap: true,            // 不滾動時使用
+                physics: NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 3,       // 調整按鈕寬高比
+                children: List.generate( selectedOnlineWallet?.selectedMerchant?.quickAmounts?.length ?? 0, (quickAmountIndex) {
+                return ElevatedButton(
+                  style:  ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(5), // 圓角
+                    ),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _amountController.text = '${selectedOnlineWallet?.selectedMerchant?.quickAmounts?[quickAmountIndex]}';
+                    });
+                  },
+                  child: Text('${selectedOnlineWallet?.selectedMerchant?.quickAmounts?[quickAmountIndex]}'),
+                );
+                }),
+            ).mt(20)
+          ],
+
+          // 帳號名稱
+          if(
+            selectedOnlineWallet?.selectedMerchant?.isAccountHolderNameRequired != null &&
+            selectedOnlineWallet?.selectedMerchant?.isAccountHolderNameRequired != false
+          ) ...[
+            TextField(
+              controller: _accountHolderNameController,
+
+              textAlignVertical: TextAlignVertical.center,  // 關鍵設定
+
+              decoration: InputDecoration(
+                labelText: '輸入帳戶姓名',
+                errorText: _accountHolderNameErrorText,
+                contentPadding: EdgeInsets.only(left: 10),  // 移除預設內距
+
+                prefix: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(Icons.people, size: 20).mr(5),
+                  ],
+                ).h(35),
+
+                // prefixIcon: Icon(Icons.attach_money, size: 20),  // 左：貨幣圖標,
+                suffixIcon: IconButton(  // 右：可點擊清空按鈕
+                  icon: Icon(Icons.clear),
+                  onPressed: () {
+                    _amountController.clear();
+                    setState(() {
+                      _amountErrorText = null;
+                    });
+                  },
+                ),
+                border: const OutlineInputBorder(),
+              ),
+            ).px(1).mt(20),
+            Text('(銀行轉帳姓名和註冊姓名需一致)', style: TextStyle(color: primaryColor)),
+          ],
+
+          // 確定存款
+          ElevatedButton(
+            onPressed: () {
+              _confirmDeposit();
+            },
+            child: Text('確定存款')
+          ).w(double.infinity).mt(30)
+        ],
+      ).px(40).py(20),
+    );
+  }
+
+  // 建立 VIP 內容 =============================================
+  Widget _buildVipDepositContent(Color primaryColor) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 選擇商戶
+          Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: primaryColor,
+                  borderRadius: BorderRadius.only(topLeft: Radius.circular(5), topRight: Radius.circular(5))
+                ),
+                child: Text('請選擇商戶', style: TextStyle(color: Colors.white))
+              ),
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(bottomLeft: Radius.circular(5), bottomRight: Radius.circular(5))
+                ),
+                child: GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,            // 不滾動時使用
+                  physics: NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  childAspectRatio: 4,       // 調整按鈕寬高比
+                  children: List.generate(VIPMerchantList.length, (index) {
+                    return ElevatedButton(
+                      style:  ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(5), // 圓角
+                        ),
+                        side: BorderSide(
+                          color: VIPMerchantList[index] == selectedVIPMerchant ? primaryColor : '#aaaaaa'.toColor(),
+                          width: 1
+                        ),
+                        backgroundColor: Colors.white,
+                        foregroundColor: VIPMerchantList[index] == selectedVIPMerchant ? primaryColor : '#777777'.toColor(),// border
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          selectedVIPMerchant = VIPMerchantList[index];
+                        });
+                      },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.wallet_giftcard).mr(5),
+                          Text(VIPMerchantList[index].name)
+                        ],
+                      ),
+                    );
+                  }),
+                )
+              ),
+            ],
+          ),
+
+          // 選擇收付款方式
+          Column(
+            children: [
+              Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                      color: primaryColor,
+                      borderRadius: BorderRadius.only(topLeft: Radius.circular(5), topRight: Radius.circular(5))
+                  ),
+                  child: Row(
+                    children: [
+                      Text('請選擇收付款方式', style: TextStyle(color: Colors.white)).flex(),
+                      Text(
+                          '訂單查詢',
+                          style: TextStyle(color: Colors.white)
+                      )
+                    ],
+                  )
+              ),
+              Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(bottomLeft: Radius.circular(5), bottomRight: Radius.circular(5))
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+
+                        },
+                        child: Container(
+                            padding: EdgeInsets.all(10),
+                            margin: EdgeInsets.only(bottom: 10),
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(5),
+                                border: Border.all(color: '#aaaaaa'.toColor())
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.phone, color: Colors.green).ml(10).mr(20),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if(selectedVIPMerchant?.paymentTypeWalletText != null)
+                                      Row(
+                                        children: [
+                                          Icon(Icons.wallet_giftcard),
+                                          Text(
+                                            selectedVIPMerchant?.paymentTypeWalletText ?? '',
+                                          ),
+                                        ],
+                                      ),
+                                    Text(
+                                      '請先綁定支付方式',
+                                      style: TextStyle(color: '#aaaaaa'.toColor()),
+                                    ),
+                                  ],
+                                ).flex(),
+
+                              ],
+                            )
+                        ),
+                      ),
+                      if(selectedVIPMerchant?.paymentTypeHint != null)
+                        Text(
+                          selectedVIPMerchant?.paymentTypeHint ?? '',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                    ],
+                  )
+              ),
+            ],
+          ).mt(20),
+
+          // 輸入存款金額
+        ],
+      ).p(40),
+    );
+  }
+
+  // 建立 線下存款 內容 =============================================
+  Widget _buildOfflineDepositContent() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('線下存款')
+        ]
+      ),
+    );
+  }
+}

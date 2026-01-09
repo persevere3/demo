@@ -20,6 +20,8 @@ import '../pages/pocketTransfer/PocketTransferPage.dart';
 
 import '../pages/personalMessage/PersonalMessagePage.dart';
 
+import '../pages/deposit/DepositPage.dart';
+
 class AppRouter {
   static final routes = <String, WidgetBuilder>{
     '/': (context) => HomePage(),
@@ -106,6 +108,12 @@ class AppRouter {
       case '/personalMessage':
         return MaterialPageRoute(
           builder: (context) => PersonalMessagePage(),
+          settings: settings,
+        );
+
+      case '/deposit':
+        return MaterialPageRoute(
+          builder: (context) => DepositPage(),
           settings: settings,
         );
       default:

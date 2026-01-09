@@ -13,6 +13,7 @@ class MenuDrawer extends ConsumerWidget {
     {'title': '帳戶紀錄', 'icon': Icons.list_alt_rounded, 'routerName': '/recordList'},
     {'title': '我的錢包', 'icon': Icons.account_balance_wallet, 'routerName': '/pocketTransfer'},
     {'title': '個人信息', 'icon': Icons.message, 'routerName': '/personalMessage'},
+    {'title': '快速充值', 'icon': Icons.account_balance, 'routerName': '/deposit'},
 
     {'title': '搜尋', 'icon': Icons.home},
     {'title': '網站APP下載', 'icon': Icons.settings},
