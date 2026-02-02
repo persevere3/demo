@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -126,6 +128,20 @@ class OfflineDepositAccount {
     required this.bankBranch,
     required this.accountNumber,
     this.hint,
+  });
+}
+
+class OfflineDepositVirtualCurrencyAccount {
+  final String virtualCurrency;
+  final String accountName;
+  final double exchangeRate;
+  final String walletAddress;
+
+  const OfflineDepositVirtualCurrencyAccount({
+    required this.virtualCurrency,
+    required this.accountName,
+    required this.exchangeRate,
+    required this.walletAddress,
   });
 }
 
@@ -555,7 +571,7 @@ class _DepositPageState extends ConsumerState<DepositPage> with TickerProviderSt
   }
 
   // 提交
-  void _submit() {
+  void _VIPSubmit() {
     final VIPAmountText = _VIPAmountController.text;
 
     setState(() {
@@ -602,6 +618,7 @@ class _DepositPageState extends ConsumerState<DepositPage> with TickerProviderSt
     )
   ];
   OfflineDepositAccount? selectedOfflineDepositAccount;
+  String? selectedOfflineDepositAccountErrorText;
 
   // 轉出帳戶
   List<String> offlineWithdrawAccounts = [
@@ -626,75 +643,166 @@ class _DepositPageState extends ConsumerState<DepositPage> with TickerProviderSt
   final TextEditingController _offlineNameController = TextEditingController();
   String? _offlineNameErrorText;
 
+  // 虛擬幣
+  List<String> selectedOfflineDepositVirtualCurrencies = [
+    "USDT-TRC"
+  ];
+  String? selectedOfflineDepositVirtualCurrency;
+  String? selectedOfflineDepositVirtualCurrencyErrorText;
+
+  // 虛擬幣轉入帳戶
+  List<OfflineDepositVirtualCurrencyAccount> offlineDepositVirtualCurrencyAccounts = [
+    OfflineDepositVirtualCurrencyAccount(
+        virtualCurrency: 'USDT-TRC',
+        accountName: 'USDT-TRC20',
+        exchangeRate: 7.02,
+        walletAddress: 'TSCSuShVa2jx4mKKFqHhawdtSc9C2Uzn6s'
+    ),
+  ];
+  OfflineDepositVirtualCurrencyAccount? selectedOfflineDepositVirtualCurrencyAccount;
+  String? selectedOfflineDepositVirtualCurrencyAccountErrorText;
+
+  // 虛擬幣 貨幣數量
+  final TextEditingController _offlineCurrencyQuantityController = TextEditingController();
+  String? _offlineCurrencyQuantityErrorText;
+
+  // 虛擬幣 金額
+  double? _offlineVirtualCurrencyAmount;
+
   //
-  static String _format(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-'
-          '${d.month.toString().padLeft(2, '0')}-'
-          '${d.day.toString().padLeft(2, '0')} '
-          '${d.hour.toString().padLeft(2, '0')}:'
-          '${d.minute.toString().padLeft(2, '0')}';
+  String? validateCurrencyQuantity(String text) {
+    if (text.isEmpty) return '請輸入數量';
+
+    final value = double.tryParse(text);
+    if (value == null) return '請輸入有效數字';
+    if (value < 0) return '金額不能為負數';
+
+    return null; // 通過驗證
+  }
 
   // 提交
   void _offlineDepositSubmit() {
     final type = selectedOfflineDepositType;
-    final bank = selectedOfflineWithdrawAccount;
-    final offlineAmountText = _offlineAmountController.text;
-    final time = pickedTime;
-    final offlineNameText = _offlineNameController.text;
+    if(type == null) {
+      selectedOfflineDepositTypeErrorText = '請選擇存款方式';
+      return;
+    }
+    else {
+      selectedOfflineDepositTypeErrorText = null;
+    }
 
+    if(type.type == 1) {
+      final depositBank = selectedOfflineDepositAccount;
+      final withdrawBank = selectedOfflineWithdrawAccount;
+      final offlineAmountText = _offlineAmountController.text;
+      final time = pickedTime;
+      final offlineNameText = _offlineNameController.text;
 
-    setState(() {
-      if(type == null) {
-        selectedOfflineDepositTypeErrorText = '請選擇存款方式';
-      }
-      else {
-        selectedOfflineDepositTypeErrorText = null;
-      }
+      setState(() {
+        if(depositBank == null) {
+          selectedOfflineDepositAccountErrorText = '請選擇帳戶';
+        }
+        else {
+          selectedOfflineDepositAccountErrorText = null;
+        }
 
-      if(bank == null) {
-        selectedOfflineWithdrawAccountErrorText = '請選擇帳戶';
-      }
-      else {
-        selectedOfflineWithdrawAccountErrorText = null;
-      }
+        if(withdrawBank == null) {
+          selectedOfflineWithdrawAccountErrorText = '請選擇帳戶';
+        }
+        else {
+          selectedOfflineWithdrawAccountErrorText = null;
+        }
 
-      _offlineAmountErrorText = validateAmount(offlineAmountText);
+        _offlineAmountErrorText = validateAmount(offlineAmountText);
 
-      if(time == null) {
-        pickedTimeErrorText = '請選擇時間';
-      }
-      else {
-        pickedTimeErrorText = null;
-      }
+        if(time == null) {
+          pickedTimeErrorText = '請選擇時間';
+        }
+        else {
+          pickedTimeErrorText = null;
+        }
 
-      if(offlineNameText.isEmpty) {
-        _offlineNameErrorText = '請輸入存款人姓名';
-      }
-      else {
-        _offlineNameErrorText = null;
-      }
-    });
+        if(offlineNameText.isEmpty) {
+          _offlineNameErrorText = '請輸入存款人姓名';
+        }
+        else {
+          _offlineNameErrorText = null;
+        }
+      });
 
-    if(bank == null) return;
-    if (_offlineAmountErrorText != null) return;
-    if(time == null) return;
-    if (_offlineNameErrorText != null) return;
+      if(depositBank == null) return;
+      if(withdrawBank == null) return;
+      if (_offlineAmountErrorText != null) return;
+      if(time == null) return;
+      if (_offlineNameErrorText != null) return;
 
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('線下存款 提交').mr(10),
-            Text('銀行: $bank').mr(10),
-            Text('金額: $offlineAmountText').mr(10),
-            Text('時間: $time').mr(10),
-            Text('存款人姓名: $offlineNameText ').mr(10),
-          ],
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('線下存款 提交').mr(10),
+              Text('轉入銀行: $depositBank').mr(10),
+              Text('轉出銀行: $withdrawBank').mr(10),
+              Text('金額: $offlineAmountText').mr(10),
+              Text('時間: $time').mr(10),
+              Text('存款人姓名: $offlineNameText ').mr(10),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    }
+    else if(type.type == 2) {
+      final virtualCurrency = selectedOfflineDepositVirtualCurrency;
+      final depositbank = selectedOfflineDepositVirtualCurrencyAccount;
+      final currencyQuantityText = _offlineCurrencyQuantityController.text;
+      final time = pickedTime;
+
+      setState(() {
+        if(virtualCurrency == null) {
+          selectedOfflineDepositVirtualCurrencyErrorText = '請選擇虛擬幣';
+        }
+        else {
+          selectedOfflineDepositVirtualCurrencyErrorText = null;
+        }
+
+        if(depositbank == null) {
+          selectedOfflineDepositVirtualCurrencyAccountErrorText = '請選擇轉入帳號';
+        }
+        else {
+          selectedOfflineDepositVirtualCurrencyAccountErrorText = null;
+        }
+
+        _offlineCurrencyQuantityErrorText = validateCurrencyQuantity(currencyQuantityText);
+
+        if(time == null) {
+          pickedTimeErrorText = '請選擇時間';
+        }
+        else {
+          pickedTimeErrorText = null;
+        }
+      });
+
+      if(virtualCurrency == null) return;
+      if(depositbank == null) return;
+      if (_offlineCurrencyQuantityErrorText != null) return;
+      if(time == null) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('線下存款 提交').mr(10),
+              Text('虛擬幣: $virtualCurrency').mr(10),
+              Text('貨幣數量: $currencyQuantityText').mr(10),
+              Text('金額: $_offlineVirtualCurrencyAmount').mr(10),
+              Text('時間: $time').mr(10),
+            ],
+          ),
+        ),
+      );
+    }
   }
 
   // override =============================================
@@ -714,7 +822,11 @@ class _DepositPageState extends ConsumerState<DepositPage> with TickerProviderSt
   @override
   void dispose() {
     _amountController.dispose();
+    _accountHolderNameController.dispose();
     _VIPAmountController.dispose();
+    _offlineAmountController.dispose();
+    _offlineNameController.dispose();
+    _offlineCurrencyQuantityController.dispose();
 
     super.dispose();
   }
@@ -1296,7 +1408,7 @@ class _DepositPageState extends ConsumerState<DepositPage> with TickerProviderSt
           // 提交
           ElevatedButton(
             onPressed: () {
-              _submit();
+              _VIPSubmit();
             },
             child: Text('提交')
           ).w(double.infinity).mt(30)
@@ -1309,7 +1421,6 @@ class _DepositPageState extends ConsumerState<DepositPage> with TickerProviderSt
   Widget _buildOfflineDepositContent(Color primaryColor) {
     return SingleChildScrollView(
       child: Column(
-
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 存款方式
@@ -1356,224 +1467,495 @@ class _DepositPageState extends ConsumerState<DepositPage> with TickerProviderSt
                 )
             ).mt(5).ml(12),
 
-          // 選擇轉入帳號
-          Text('一、请选择转入账号').w(double.infinity).mt(20),
-          ListView.builder(
-            itemCount: offlineDepositAccounts.length,
-            itemBuilder: (context, index) {
-              final account = offlineDepositAccounts[index];
-              Color backgroundColor = account == selectedOfflineDepositAccount ? primaryColor.lighten(0.1) : Colors.white;
-              Color textColor = account == selectedOfflineDepositAccount ? Colors.white : '#555555'.toColor();
+          // type1
+          if(selectedOfflineDepositType?.type == 1)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 選擇轉入帳號
+                Text('一、请选择转入账号').w(double.infinity).mt(20),
+                ListView.builder(
+                  itemCount: offlineDepositAccounts.length,
+                  itemBuilder: (context, index) {
+                    final account = offlineDepositAccounts[index];
+                    Color backgroundColor = account == selectedOfflineDepositAccount ? primaryColor.lighten(0.1) : Colors.white;
+                    Color textColor = account == selectedOfflineDepositAccount ? Colors.white : '#555555'.toColor();
 
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                color: backgroundColor,
-                child: ListTile(
-                  subtitle: Column(
+                    return Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      color: backgroundColor,
+                      child: ListTile(
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('銀行: ${account.bankName}', style: TextStyle(color: textColor)).mb(5),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('收款人: ${account.accountHolderName}', style: TextStyle(color: textColor)),
+                                TextButton(
+                                    onPressed: () {
+
+                                    },
+                                    child: Text('複製')
+                                ).h(25),
+                              ],
+                            ).mb(5),
+                            Text('收款人: ${account.accountHolderName}', style: TextStyle(color: textColor)).mb(5),
+                            Text('開戶行網點: ${account.bankBranch}', style: TextStyle(color: textColor)).mb(5),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text('帳號: ${account.accountNumber}', style: TextStyle(color: textColor)),
+                                TextButton(
+                                    onPressed: () {
+
+                                    },
+                                    child: Text('複製')
+                                ).h(25),
+                              ],
+                            ).mb(5),
+                            if (account.hint != null && account.hint!.isNotEmpty)
+                              Text('提示: ${account.hint}', style: TextStyle(color: Colors.red.darken(0.2)))
+                          ],
+                        ),
+                        isThreeLine: true,
+                        onTap: () {
+                          setState(() {
+                            selectedOfflineDepositAccount = account;
+                          });
+                        },
+                      ),
+                    );
+                  },
+                ).h(400).mt(10),
+                if(selectedOfflineDepositAccountErrorText != null)
+                  Text(
+                      selectedOfflineDepositAccountErrorText!,
+                      style: TextStyle(
+                          color: Colors.red.darken(0.3),
+                          fontSize: 13
+                      )
+                  ).mt(5).ml(12),
+
+                if(selectedOfflineDepositAccount != null)
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('銀行: ${account.bankName}', style: TextStyle(color: textColor)).mb(5),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('收款人: ${account.accountHolderName}', style: TextStyle(color: textColor)),
-                          TextButton(
-                            onPressed: () {
+                      // 掃碼存款
+                      Text('掃碼存款:').mt(20),
+                      Container(
+                        width: 250,
+                        height: 250,
+                        color: primaryColor.lighten(0.3),
+                        child: QrImageView(
+                          data: 'https://www.youtube.com/',
+                          version: QrVersions.auto,
+                          size: 200,
+                          gapless: false,
+                        ),
+                      ).center(),
+                      Text(
+                          '${selectedOfflineDepositAccount?.accountHolderName} 下載碼',
+                          style: TextStyle(fontWeight: FontWeight.w600)
+                      ).center().mt(10),
+                      TextButton(
+                        onPressed: () {
 
-                            },
-                            child: Text('複製')
-                          ).h(25),
-                        ],
-                      ).mb(5),
-                      Text('收款人: ${account.accountHolderName}', style: TextStyle(color: textColor)).mb(5),
-                      Text('開戶行網點: ${account.bankBranch}', style: TextStyle(color: textColor)).mb(5),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text('帳號: ${account.accountNumber}', style: TextStyle(color: textColor)),
-                          TextButton(
-                            onPressed: () {
+                        },
+                        child: Text(
+                            '转跳支付(请先截屏或长按二维码保存)',
+                            style: TextStyle(color: primaryColor.darken(0.1))
+                        ),
+                      ).w(double.infinity).mt(10),
 
-                            },
-                            child: Text('複製')
-                          ).h(25),
-                        ],
-                      ).mb(5),
-                      if (account.hint != null && account.hint!.isNotEmpty)
-                        Text('提示: ${account.hint}', style: TextStyle(color: Colors.red.darken(0.2)))
+                      // 選擇轉出帳號
+                      Text('二、选择您所使用的银行帐户').w(double.infinity).mt(20),
+
+                      // 轉出帳號 下拉
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: selectedOfflineWithdrawAccountErrorText != null ? Colors.red.darken(0.3) : Colors.grey.shade300),
+                        ),
+                        child: DropdownButton<String>(
+                          value: selectedOfflineWithdrawAccount,
+                          hint: Text('請選擇'),   // ✅ 預設文字
+                          isExpanded: true,
+                          underline: const SizedBox.shrink(),
+                          icon: const Icon(Icons.keyboard_arrow_down),
+                          items: offlineWithdrawAccounts.map((option) {
+                            return DropdownMenuItem<String>(
+                              value: option,
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.account_balance_wallet_outlined, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(option),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              selectedOfflineWithdrawAccount = newValue!;
+                            });
+                          },
+                        ),
+                      ).mt(20),
+                      if(selectedOfflineWithdrawAccountErrorText != null)
+                        Text(
+                            selectedOfflineWithdrawAccountErrorText!,
+                            style: TextStyle(
+                                color: Colors.red.darken(0.3),
+                                fontSize: 13
+                            )
+                        ).mt(5).ml(12),
+
+                      // 金額
+                      TextField(
+                        controller: _offlineAmountController,
+                        keyboardType: TextInputType.number,
+
+                        textAlignVertical: TextAlignVertical.center,  // 關鍵設定
+
+                        decoration: InputDecoration(
+                          labelText: '存入金額',
+                          errorText: _offlineAmountErrorText,
+                          contentPadding: EdgeInsets.only(left: 10),  // 移除預設內距
+                          border: const OutlineInputBorder(),
+                        ),
+                      ).mt(10),
+                      if(_offlineAmountErrorText != null)
+                        Text('支付幣種: $_currency', style: TextStyle(color: Colors.black54)).mt(2),
+
+                      // 時間
+                      InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () async {
+                          final picked = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.now(),
+                          );
+                          if (picked != null) {
+                            final selectedTime = DateTime(
+                              DateTime.now().year,
+                              DateTime.now().month,
+                              DateTime.now().day,
+                              picked.hour,
+                              picked.minute,
+                            );
+
+                            // ✅ 這裡就是回傳的地方
+                            setState(() {
+                              pickedTime = selectedTime;  // 更新你的變數
+                            });
+                          }
+                        },
+                        child: Container(
+                          height: 50,
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: pickedTimeErrorText != null ? Colors.red.darken(0.3) : Colors.black26),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.access_time, color: Colors.black),
+                              SizedBox(width: 12),
+                              Text(
+                                pickedTime == null
+                                    ? '選擇時間'
+                                    : DateTimePickerUtils.formatTime(pickedTime!),
+                                style: TextStyle(color: Colors.black),
+                              ),
+                              Spacer(),
+                              Icon(Icons.keyboard_arrow_down, color: Colors.black),
+                            ],
+                          ),
+                        ),
+                      ).mt(20),
+                      if(pickedTimeErrorText != null)
+                        Text(
+                            pickedTimeErrorText!,
+                            style: TextStyle(
+                                color: Colors.red.darken(0.3),
+                                fontSize: 13
+                            )
+                        ).mt(5).ml(12),
+
+                      // 姓名
+                      TextField(
+                        controller: _offlineNameController,
+                        keyboardType: TextInputType.name,
+
+                        textAlignVertical: TextAlignVertical.center,  // 關鍵設定
+
+                        decoration: InputDecoration(
+                          labelText: '存款人姓名',
+                          errorText: _offlineNameErrorText,
+                          contentPadding: EdgeInsets.only(left: 10),  // 移除預設內距
+                          border: const OutlineInputBorder(),
+                        ),
+                      ).mt(20),
                     ],
+                  )
+              ],
+            ),
+
+          // type2
+          if(selectedOfflineDepositType?.type == 2)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 虛擬幣
+                Text('虛擬幣').w(double.infinity).mt(20),
+                // 下拉
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: selectedOfflineDepositVirtualCurrencyErrorText != null ? Colors.red.darken(0.3) : Colors.grey.shade300),
                   ),
-                  isThreeLine: true,
-                  onTap: () {
-                    setState(() {
-                      selectedOfflineDepositAccount = account;
-                    });
-                  },
-                ),
-              );
-            },
-          ).h(400).mt(10),
-
-          // 掃碼存款
-          Text('掃碼存款:').mt(20),
-          Container(
-            width: 250,
-            height: 250,
-            color: primaryColor.lighten(0.3),
-            child: QrImageView(
-              data: 'https://www.youtube.com/',
-              version: QrVersions.auto,
-              size: 200,
-              gapless: false,
-            ),
-          ).center(),
-          Text(
-            '${selectedOfflineDepositAccount?.accountHolderName} 下載碼',
-            style: TextStyle(fontWeight: FontWeight.w600)
-          ).center().mt(10),
-          TextButton(
-            onPressed: () {
-
-            },
-            child: Text(
-              '转跳支付(请先截屏或长按二维码保存)',
-              style: TextStyle(color: primaryColor.darken(0.1))
-            ),
-          ).w(double.infinity).mt(10),
-
-          // 選擇轉出帳號
-          Text('二、选择您所使用的银行帐户').w(double.infinity).mt(20),
-
-          // 轉出帳號 下拉
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: selectedOfflineWithdrawAccountErrorText != null ? Colors.red.darken(0.3) : Colors.grey.shade300),
-            ),
-            child: DropdownButton<String>(
-              value: selectedOfflineWithdrawAccount,
-              hint: Text('請選擇'),   // ✅ 預設文字
-              isExpanded: true,
-              underline: const SizedBox.shrink(),
-              icon: const Icon(Icons.keyboard_arrow_down),
-              items: offlineWithdrawAccounts.map((option) {
-                return DropdownMenuItem<String>(
-                  value: option,
-                  child: Row(
-                    children: [
-                      const Icon(Icons.account_balance_wallet_outlined, size: 20),
-                      const SizedBox(width: 8),
-                      Text(option),
-                    ],
+                  child: DropdownButton<String>(
+                    value: selectedOfflineDepositVirtualCurrency,
+                    hint: Text('請選擇'),   // ✅ 預設文字
+                    isExpanded: true,
+                    underline: const SizedBox.shrink(),
+                    icon: const Icon(Icons.keyboard_arrow_down),
+                    items: selectedOfflineDepositVirtualCurrencies.map((option) {
+                      return DropdownMenuItem<String>(
+                        value: option,
+                        child: Row(
+                          children: [
+                            const Icon(Icons.account_balance_wallet_outlined, size: 20),
+                            const SizedBox(width: 8),
+                            Text(option),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        selectedOfflineDepositVirtualCurrency = newValue!;
+                      });
+                    },
                   ),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  selectedOfflineWithdrawAccount = newValue!;
-                });
-              },
-            ),
-          ).mt(20),
-          if(selectedOfflineWithdrawAccountErrorText != null)
-            Text(
-              selectedOfflineWithdrawAccountErrorText!,
-              style: TextStyle(
-                color: Colors.red.darken(0.3),
-                fontSize: 13
-              )
-            ).mt(5).ml(12),
-
-          // 金額
-          TextField(
-            controller: _offlineAmountController,
-            keyboardType: TextInputType.number,
-
-            textAlignVertical: TextAlignVertical.center,  // 關鍵設定
-
-            decoration: InputDecoration(
-              labelText: '存入金額',
-              errorText: _offlineAmountErrorText,
-              contentPadding: EdgeInsets.only(left: 10),  // 移除預設內距
-              border: const OutlineInputBorder(),
-            ),
-          ).mt(10),
-          if(_offlineAmountErrorText != null)
-          Text('支付幣種: $_currency', style: TextStyle(color: Colors.black54)).mt(2),
-
-          // 時間
-          InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap: () async {
-              final picked = await showTimePicker(
-                context: context,
-                initialTime: TimeOfDay.now(),
-              );
-              if (picked != null) {
-                final selectedTime = DateTime(
-                  DateTime.now().year,
-                  DateTime.now().month,
-                  DateTime.now().day,
-                  picked.hour,
-                  picked.minute,
-                );
-
-                // ✅ 這裡就是回傳的地方
-                setState(() {
-                  pickedTime = selectedTime;  // 更新你的變數
-                });
-              }
-            },
-            child: Container(
-              height: 50,
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: pickedTimeErrorText != null ? Colors.red.darken(0.3) : Colors.black26),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.access_time, color: Colors.black),
-                  SizedBox(width: 12),
+                ).mt(20),
+                if(selectedOfflineDepositVirtualCurrencyErrorText != null)
                   Text(
-                    pickedTime == null
-                      ? '選擇時間'
-                      : DateTimePickerUtils.formatTime(pickedTime!),
-                    style: TextStyle(color: Colors.black),
-                  ),
-                  Spacer(),
-                  Icon(Icons.keyboard_arrow_down, color: Colors.black),
-                ],
-              ),
+                      selectedOfflineDepositVirtualCurrencyErrorText!,
+                      style: TextStyle(
+                          color: Colors.red.darken(0.3),
+                          fontSize: 13
+                      )
+                  ).mt(5).ml(12),
+
+                // 選擇轉入帳號
+                if(selectedOfflineDepositVirtualCurrency != null)
+                  Column(
+                    children: [
+                      Text('请选择转入账号').w(double.infinity).mt(20),
+                      ListView.builder(
+                        itemCount: offlineDepositVirtualCurrencyAccounts.length,
+                        itemBuilder: (context, index) {
+                          final account = offlineDepositVirtualCurrencyAccounts[index];
+                          Color backgroundColor = account == selectedOfflineDepositVirtualCurrencyAccount ? primaryColor.lighten(0.1) : Colors.white;
+                          Color textColor = account == selectedOfflineDepositVirtualCurrencyAccount ? Colors.white : '#555555'.toColor();
+
+                          return Card(
+                            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            color: backgroundColor,
+                            child: ListTile(
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('虛擬幣: ${account.virtualCurrency}', style: TextStyle(color: textColor)).mb(5),
+                                  Wrap(
+                                    crossAxisAlignment: WrapCrossAlignment.center, // 中間對齊
+                                    spacing: 10.0,
+                                    children: [
+                                      Text('貨幣帳戶名稱: ${account.accountName}', style: TextStyle(color: textColor)),
+                                      TextButton(
+                                          onPressed: () {
+
+                                          },
+                                          child: Text('複製')
+                                      ).h(25),
+                                    ],
+                                  ).mb(5),
+                                  Text('貨幣匯率: ${account.exchangeRate}', style: TextStyle(color: textColor)).mb(5),
+                                  Wrap(
+                                    spacing: 10.0,
+                                    crossAxisAlignment: WrapCrossAlignment.center, // 中間對齊
+                                    children: [
+                                      Text('收款錢包地址: ${account.walletAddress}', style: TextStyle(color: textColor)),
+                                      TextButton(
+                                          onPressed: () {
+
+                                          },
+                                          child: Text('複製')
+                                      ).h(25),
+                                    ],
+                                  ).mb(5),
+                                ],
+                              ),
+                              isThreeLine: true,
+                              onTap: () {
+                                setState(() {
+                                  selectedOfflineDepositVirtualCurrencyAccount = account;
+                                });
+                              },
+                            ),
+                          );
+                        },
+                      ).h(180).mt(10),
+                      if(selectedOfflineDepositVirtualCurrencyAccountErrorText != null)
+                        Text(
+                            selectedOfflineDepositVirtualCurrencyAccountErrorText!,
+                            style: TextStyle(
+                                color: Colors.red.darken(0.3),
+                                fontSize: 13
+                            )
+                        ).mt(5).ml(12),
+
+                      if(selectedOfflineDepositVirtualCurrencyAccount != null)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('請填寫存款資訊:').mt(20),
+
+                            // 貨幣數量
+                            TextField(
+                              controller: _offlineCurrencyQuantityController,
+                              keyboardType: TextInputType.number,
+
+                              textAlignVertical: TextAlignVertical.center,  // 關鍵設定
+
+                              decoration: InputDecoration(
+                                labelText: '貨幣數量',
+                                errorText: _offlineCurrencyQuantityErrorText,
+                                contentPadding: EdgeInsets.only(left: 10),  // 移除預設內距
+                                border: const OutlineInputBorder(),
+                              ),
+
+                              onChanged: (value) {
+                                setState(() {
+                                  _offlineVirtualCurrencyAmount = double.parse(
+                                      (selectedOfflineDepositVirtualCurrencyAccount!.exchangeRate *
+                                          (num.tryParse(value) ?? 0)).toStringAsFixed(2)
+                                  );
+                                });
+                              }
+                            ).mt(20),
+                            if(_offlineCurrencyQuantityErrorText != null)
+                              Text(_offlineCurrencyQuantityErrorText!, style: TextStyle(color: Colors.black54)).mt(2),
+                            Text('(貨幣數量須在 1 - 100000 之間)'),
+                            Text('【点击购买虚拟币】'),
+                            Wrap(
+                              spacing: 10,
+                              children: [
+                                TextButton(
+                                  onPressed: () {
+
+                                  },
+                                  child: Text('中币交易网')
+                                ),
+                                TextButton(
+                                  onPressed: () {
+
+                                  },
+                                  child: Text('欧易交易网')
+                                ),
+                              ],
+                            ).mt(3),
+                            Text('请确认虚拟币余额是否充足，或至交易所进行购买。'),
+
+                            // 金額
+                            TextField(
+                              readOnly: true,
+                              controller:  TextEditingController(text: '${_offlineVirtualCurrencyAmount ?? '0'}'),
+                              keyboardType: TextInputType.number,
+
+                              textAlignVertical: TextAlignVertical.center,  // 關鍵設定
+
+                              decoration: InputDecoration(
+                                labelText: '金額',
+                                contentPadding: EdgeInsets.only(left: 10),  // 移除預設內距
+                                border: const OutlineInputBorder(),
+                              ),
+                            ).mt(20),
+                            Text(
+                              _currency
+                            ).mt(10),
+
+                            // 時間
+                            InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: () async {
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime: TimeOfDay.now(),
+                                );
+                                if (picked != null) {
+                                  final selectedTime = DateTime(
+                                    DateTime.now().year,
+                                    DateTime.now().month,
+                                    DateTime.now().day,
+                                    picked.hour,
+                                    picked.minute,
+                                  );
+
+                                  // ✅ 這裡就是回傳的地方
+                                  setState(() {
+                                    pickedTime = selectedTime;  // 更新你的變數
+                                  });
+                                }
+                              },
+                              child: Container(
+                                height: 50,
+                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: pickedTimeErrorText != null ? Colors.red.darken(0.3) : Colors.black26),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.access_time, color: Colors.black),
+                                    SizedBox(width: 12),
+                                    Text(
+                                      pickedTime == null
+                                          ? '選擇時間'
+                                          : DateTimePickerUtils.formatTime(pickedTime!),
+                                      style: TextStyle(color: Colors.black),
+                                    ),
+                                    Spacer(),
+                                    Icon(Icons.keyboard_arrow_down, color: Colors.black),
+                                  ],
+                                ),
+                              ),
+                            ).mt(20),
+                            if(pickedTimeErrorText != null)
+                              Text(
+                                  pickedTimeErrorText!,
+                                  style: TextStyle(
+                                      color: Colors.red.darken(0.3),
+                                      fontSize: 13
+                                  )
+                              ).mt(5).ml(12),
+                          ],
+                        )
+                    ],
+                  )
+
+              ],
             ),
-          ).mt(20),
-          if(pickedTimeErrorText != null)
-            Text(
-                pickedTimeErrorText!,
-                style: TextStyle(
-                    color: Colors.red.darken(0.3),
-                    fontSize: 13
-                )
-            ).mt(5).ml(12),
-
-          // 姓名
-          TextField(
-            controller: _offlineNameController,
-            keyboardType: TextInputType.name,
-
-            textAlignVertical: TextAlignVertical.center,  // 關鍵設定
-
-            decoration: InputDecoration(
-              labelText: '存款人姓名',
-              errorText: _offlineNameErrorText,
-              contentPadding: EdgeInsets.only(left: 10),  // 移除預設內距
-              border: const OutlineInputBorder(),
-            ),
-          ).mt(20),
 
           // 提交
           ElevatedButton(
