@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../layout/DefaultLayout.dart';
 
 import 'package:demo/providers/configProvider.dart';
-import 'package:demo/providers/userProvider.dart';
 
 class PocketTransferPage extends ConsumerStatefulWidget {
   const PocketTransferPage({super.key});

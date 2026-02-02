@@ -10,7 +10,6 @@ import '../../../components/StickyExpandableTable.dart';
 import '../../../layout/DefaultLayout.dart';
 
 import 'package:demo/providers/configProvider.dart';
-import 'package:demo/providers/userProvider.dart';
 
 // 信息數據類
 class Message {

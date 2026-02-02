@@ -9,7 +9,6 @@ import '../../../components/StickyExpandableTable.dart';
 import '../../../layout/DefaultLayout.dart';
 
 import 'package:demo/providers/configProvider.dart';
-import 'package:demo/providers/userProvider.dart';
 
 class RecordPromotionPage extends ConsumerStatefulWidget {
   const RecordPromotionPage({super.key});

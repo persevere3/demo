@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../layout/DefaultLayout.dart';
 
 import 'package:demo/providers/configProvider.dart';
-import 'package:demo/providers/userProvider.dart';
 
 import 'package:flutter_inner_shadow/flutter_inner_shadow.dart';
 
