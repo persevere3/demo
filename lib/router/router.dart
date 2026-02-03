@@ -22,6 +22,8 @@ import '../pages/personalMessage/PersonalMessagePage.dart';
 
 import '../pages/deposit/DepositPage.dart';
 
+import '../pages/withdrawal/WithdrawalPage.dart';
+
 class AppRouter {
   static final routes = <String, WidgetBuilder>{
     '/': (context) => HomePage(),
@@ -114,6 +116,11 @@ class AppRouter {
       case '/deposit':
         return MaterialPageRoute(
           builder: (context) => DepositPage(),
+          settings: settings,
+        );
+      case '/withdrawal':
+        return MaterialPageRoute(
+          builder: (context) => WithdrawalPage(),
           settings: settings,
         );
       default:

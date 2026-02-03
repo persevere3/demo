@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import 'package:demo/providers/configProvider.dart';
 
 import '../../../layout/DefaultLayout.dart';
 import '../../components/Drawer.dart';
+import '../../components/ImageUploadWidget.dart';
 import '../../utils/datetime_picker_utils.dart';
 
 //
@@ -669,6 +671,10 @@ class _DepositPageState extends ConsumerState<DepositPage> with TickerProviderSt
   // 虛擬幣 金額
   double? _offlineVirtualCurrencyAmount;
 
+  // 上傳圖片
+  UploadedImage? _uploadedImage;
+  String? pickedImageErrorText;
+
   //
   String? validateCurrencyQuantity(String text) {
     if (text.isEmpty) return '請輸入數量';
@@ -680,16 +686,33 @@ class _DepositPageState extends ConsumerState<DepositPage> with TickerProviderSt
     return null; // 通過驗證
   }
 
+  // 處理圖片變更的函數
+  void _handleImageChange(UploadedImage? image) {
+    setState(() {
+      _uploadedImage = image;
+    });
+
+    // 判斷是否有上傳圖片
+    if (image != null && image.hasImage) {
+      print('圖片已上傳: ${image.fileName}');
+    } else {
+      print('沒有圖片');
+    }
+  }
+
   // 提交
   void _offlineDepositSubmit() {
     final type = selectedOfflineDepositType;
-    if(type == null) {
-      selectedOfflineDepositTypeErrorText = '請選擇存款方式';
-      return;
-    }
-    else {
-      selectedOfflineDepositTypeErrorText = null;
-    }
+    setState(() {
+      if(type == null) {
+        selectedOfflineDepositTypeErrorText = '請選擇存款方式';
+      }
+      else {
+        selectedOfflineDepositTypeErrorText = null;
+      }
+    });
+
+    if(type == null) return;
 
     if(type.type == 1) {
       final depositBank = selectedOfflineDepositAccount;
@@ -757,6 +780,7 @@ class _DepositPageState extends ConsumerState<DepositPage> with TickerProviderSt
       final depositbank = selectedOfflineDepositVirtualCurrencyAccount;
       final currencyQuantityText = _offlineCurrencyQuantityController.text;
       final time = pickedTime;
+      final image = _uploadedImage;
 
       setState(() {
         if(virtualCurrency == null) {
@@ -781,12 +805,20 @@ class _DepositPageState extends ConsumerState<DepositPage> with TickerProviderSt
         else {
           pickedTimeErrorText = null;
         }
+
+        if(image == null) {
+          pickedImageErrorText = '請選擇截圖';
+        }
+        else {
+          pickedImageErrorText = null;
+        }
       });
 
       if(virtualCurrency == null) return;
       if(depositbank == null) return;
       if (_offlineCurrencyQuantityErrorText != null) return;
       if(time == null) return;
+      if(image == null) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1090,8 +1122,8 @@ class _DepositPageState extends ConsumerState<DepositPage> with TickerProviderSt
                   style:  ElevatedButton.styleFrom(
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(5), // 圓角
-                    ),
+                        borderRadius: BorderRadius.circular(5), // 圓角
+                      ),
                   ),
                   onPressed: () {
                     setState(() {
@@ -1949,11 +1981,20 @@ class _DepositPageState extends ConsumerState<DepositPage> with TickerProviderSt
                                       fontSize: 13
                                   )
                               ).mt(5).ml(12),
+
+                            ImageUploadWidget(onImageChanged: _handleImageChange).mt(20),
+                            if(pickedImageErrorText != null)
+                              Text(
+                                  pickedImageErrorText!,
+                                  style: TextStyle(
+                                      color: Colors.red.darken(0.3),
+                                      fontSize: 13
+                                  )
+                              ).mt(5).ml(12),
                           ],
                         )
                     ],
-                  )
-
+                  ),
               ],
             ),
 
